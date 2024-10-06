@@ -2,7 +2,6 @@ package main
 
 import (
 	"golang.org/x/net/html"
-	"log"
 	"net/url"
 	"strings"
 )
@@ -12,35 +11,30 @@ func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
 
 	doc, err := html.Parse(strings.NewReader(htmlBody))
 	if err != nil {
-		log.Fatal(err)
+		return urls, err
 	}
 
-	for c := doc.FirstChild; c != nil; c = c.NextSibling {
-		parsedHrefValue := getHrefValueFromAnchorNode(c)
-		if parsedHrefValue == "" {
-			continue
-		}
-
-		URL, err := addHostToURLIfNotExists(parsedHrefValue, rawBaseURL)
-		if err != nil {
-			return nil, err
-		}
-
-		urls = append(urls, URL)
-	}
-
-	return urls, nil
-}
-
-func getHrefValueFromAnchorNode(n *html.Node) string {
-	if n.Type == html.ElementNode && n.Data == "a" {
-		for _, a := range n.Attr {
-			if a.Key == "href" {
-				return a.Val
+	// recursive function to go deeper through html nodes and search for <a> tags
+	// done according to official docs https://pkg.go.dev/golang.org/x/net/html#example-Parse
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			for _, a := range n.Attr {
+				if a.Key == "href" {
+					if correctURL, err := addHostToURLIfNotExists(a.Val, rawBaseURL); err == nil {
+						urls = append(urls, correctURL)
+						break
+					}
+				}
 			}
 		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
 	}
-	return ""
+
+	f(doc)
+	return urls, nil
 }
 
 func addHostToURLIfNotExists(inputURL, host string) (string, error) {

@@ -82,4 +82,56 @@ func TestGetURLsFromHTML(t *testing.T) {
 			t.Errorf("Failed to parse absolute and relative URLs: expected length %v, got %v", len(tc.expected), len(parsedURLs))
 		}
 	})
+
+	t.Run("empty array if empty html body", func(t *testing.T) {
+		tc := testCase{
+			inputURL:  "https://google.com",
+			inputBody: "",
+			expected:  []string{"doesnt matter here"},
+		}
+
+		parsedURLs, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
+		if err != nil {
+			t.Errorf("Failed to parse absolute and relative URLs: got unexpected error: %v", err)
+		}
+		if len(parsedURLs) > 0 {
+			t.Errorf("Expected empty array of strings, got %v", parsedURLs)
+		}
+	})
+
+	t.Run("empty array if there are <a> tags without href attribute", func(t *testing.T) {
+		tc := testCase{
+			inputURL: "https://google.com",
+			inputBody: `
+			<html>
+				<body>
+					<a>
+						<span>Google.com</span>
+					</a>
+					<a>
+						<span>Google.com</span>
+					</a>
+					<a>
+						<span>Google.com</span>
+					</a>
+					<a>
+						<span>Google.com</span>
+					</a>
+					<a>
+						<span>Google.com</span>
+					</a>
+				</body>
+			</html>
+			`,
+			expected: []string{"doesnt matter here"},
+		}
+
+		parsedURLs, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
+		if err != nil {
+			t.Errorf("Failed to parse absolute and relative URLs: got unexpected error: %v", err)
+		}
+		if len(parsedURLs) > 0 {
+			t.Errorf("Expected empty array of strings, got %v", parsedURLs)
+		}
+	})
 }
