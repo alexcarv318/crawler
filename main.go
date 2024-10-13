@@ -2,30 +2,26 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/net/html"
-	"log"
-	"strings"
+	"os"
 )
 
 func main() {
-	s := `<p>Links:</p><ul><li><a href="foo">Foo</a><li><a href="/bar/baz">BarBaz</a></ul>`
-	doc, err := html.Parse(strings.NewReader(s))
+	commandLineArgs := os.Args[1:]
+
+	if len(commandLineArgs) == 0 {
+		fmt.Println("no website provided")
+		os.Exit(1)
+	} else if len(commandLineArgs) > 1 {
+		fmt.Println("too many arguments provided")
+		os.Exit(1)
+	} else {
+		fmt.Printf("starting crawl of: %s\n", commandLineArgs[0])
+	}
+
+	html, err := getHTML(commandLineArgs[0])
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Unable to get html from provided url: %v\n", err)
 	}
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, a := range n.Attr {
-				if a.Key == "href" {
-					fmt.Println(a.Val)
-					break
-				}
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(doc)
+
+	fmt.Println(html)
 }
