@@ -5,42 +5,44 @@ import (
 	"net/url"
 )
 
-func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) (map[string]int, error) {
-	if ok := checkIfURLDomainsAreEqual(rawBaseURL, rawCurrentURL); !ok {
-		return nil, fmt.Errorf("URL domains mismatch")
+func (cfg *config) crawlPage(rawCurrentURL string) {
+	if ok := checkIfURLDomainsAreEqual(cfg.rawBaseURL, rawCurrentURL); !ok {
+		fmt.Printf("Error: URL domains mismatch - %s and %s\n", cfg.rawBaseURL, rawCurrentURL)
+		return
 	}
 
 	normalizedCurrentURL, err := normalizeURL(rawCurrentURL)
 	if err != nil {
-		return pages, err
+		fmt.Printf("Error: URL normalization failed: %s\n", err)
+		return
 	}
 
 	// skip if visited
-	if _, ok := pages[normalizedCurrentURL]; ok {
-		pages[normalizedCurrentURL]++
-		return pages, nil
+	if _, ok := cfg.pages[normalizedCurrentURL]; ok {
+		cfg.pages[normalizedCurrentURL]++
+		return
 	}
 
-	pages[normalizedCurrentURL] = 1
+	cfg.pages[normalizedCurrentURL] = 1
 
 	currentPageHTML, err := getHTML(rawCurrentURL)
 	if err != nil {
-		return pages, err
+		fmt.Printf("Error: Failed to get HTML from URL %s: %s\n", rawCurrentURL, err)
+		return
 	}
 
 	fmt.Println(currentPageHTML)
 
 	currentPageContainedURLs, err := getURLsFromHTML(currentPageHTML, rawCurrentURL)
 	if err != nil {
-		return pages, err
+		fmt.Printf("Error: Failed to get links embedded into HTML: %s\n", err)
+		return
 	}
 
 	// recursively go through all links in the website
 	for _, nextURL := range currentPageContainedURLs {
-		_, _ = crawlPage(rawBaseURL, nextURL, pages)
+		cfg.crawlPage(nextURL)
 	}
-
-	return pages, nil
 }
 
 func checkIfURLDomainsAreEqual(url1, url2 string) bool {

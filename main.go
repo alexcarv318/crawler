@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 )
 
 func main() {
@@ -19,12 +20,15 @@ func main() {
 	rawBaseURL := commandLineArgs[0]
 	fmt.Printf("starting crawl of: %s\n", rawBaseURL)
 
-	pages := map[string]int{}
-	pages, err := crawlPage(rawBaseURL, rawBaseURL, pages)
-	if err != nil {
-		fmt.Printf("Unable to crawl page: %v\n", err)
-		os.Exit(1)
+	cfg := config{
+		pages:              map[string]int{},
+		rawBaseURL:         rawBaseURL,
+		mu:                 &sync.Mutex{},
+		concurrencyControl: make(chan struct{}, 5),
+		wg:                 &sync.WaitGroup{},
 	}
 
-	fmt.Println(pages)
+	cfg.crawlPage(rawBaseURL)
+
+	fmt.Println(cfg.pages)
 }
