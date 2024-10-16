@@ -44,8 +44,6 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	fmt.Printf("from %s successfully crawled %d pages\n", normalizedCurrentURL, len(currentPageContainedURLs))
-
 	// recursively go through all links in the website
 	for _, nextURL := range currentPageContainedURLs {
 		cfg.wg.Add(1)

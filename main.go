@@ -37,10 +37,9 @@ func main() {
 		fmt.Printf("error configuring crawler: %s\n", err)
 	}
 
-	fmt.Printf("starting crawl of: %s\n", rawBaseURL)
 	cfg.wg.Add(1)
 	go cfg.crawlPage(rawBaseURL)
 	cfg.wg.Wait()
 
-	fmt.Println(cfg.pages)
+	cfg.printReport(rawBaseURL)
 }
