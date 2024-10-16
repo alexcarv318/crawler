@@ -29,6 +29,7 @@ func main() {
 	}
 
 	cfg.crawlPage(rawBaseURL)
+	cfg.wg.Wait()
 
 	fmt.Println(cfg.pages)
 }

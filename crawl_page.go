@@ -6,6 +6,12 @@ import (
 )
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
+	cfg.concurrencyControl <- struct{}{}
+	defer func() {
+		<-cfg.concurrencyControl
+		cfg.wg.Done()
+	}()
+
 	if ok := checkIfURLDomainsAreEqual(cfg.rawBaseURL, rawCurrentURL); !ok {
 		fmt.Printf("Error: URL domains mismatch - %s and %s\n", cfg.rawBaseURL, rawCurrentURL)
 		return
@@ -17,13 +23,10 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	// skip if visited
-	if _, ok := cfg.pages[normalizedCurrentURL]; ok {
-		cfg.pages[normalizedCurrentURL]++
+	isFirstVisit := cfg.addPageVisit(normalizedCurrentURL)
+	if !isFirstVisit {
 		return
 	}
-
-	cfg.pages[normalizedCurrentURL] = 1
 
 	currentPageHTML, err := getHTML(rawCurrentURL)
 	if err != nil {
@@ -41,8 +44,10 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 
 	// recursively go through all links in the website
 	for _, nextURL := range currentPageContainedURLs {
-		cfg.crawlPage(nextURL)
+		cfg.wg.Add(1)
+		go cfg.crawlPage(nextURL)
 	}
+
 }
 
 func checkIfURLDomainsAreEqual(url1, url2 string) bool {
