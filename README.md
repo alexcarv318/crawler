@@ -1,5 +1,9 @@
 ## Web crawler
 
+To build the program run:
+
+```go build -o crawler```
+
 To execute the crawler run next command:
 
 ```./crawler <baseURL> <maxConcurrency> <maxPages>```
