@@ -6,6 +6,7 @@ import (
 
 type config struct {
 	pages              map[string]int
+	maxPages           int
 	rawBaseURL         string
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
@@ -25,9 +26,16 @@ func (cfg *config) addPageVisit(normalizedURL string) (isFirst bool) {
 	return true
 }
 
-func configure(rawBaseURL string, maxConcurrency int) (*config, error) {
+func (cfg *config) areMaxPagesReached() bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+	return len(cfg.pages) >= cfg.maxPages
+}
+
+func configure(rawBaseURL string, maxConcurrency, maxPages int) (*config, error) {
 	return &config{
 		pages:              make(map[string]int),
+		maxPages:           maxPages,
 		rawBaseURL:         rawBaseURL,
 		mu:                 &sync.Mutex{},
 		concurrencyControl: make(chan struct{}, maxConcurrency),

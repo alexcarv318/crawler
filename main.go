@@ -3,32 +3,43 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync"
+	"strconv"
 )
 
 func main() {
 	commandLineArgs := os.Args[1:]
 
-	if len(commandLineArgs) == 0 {
-		fmt.Println("no website provided")
-		os.Exit(1)
-	} else if len(commandLineArgs) > 1 {
+	if len(commandLineArgs) < 3 {
+		fmt.Println("not enough arguments provided")
+		fmt.Println("usage: crawler <baseURL> <maxConcurrency> <maxPages>")
+		return
+	}
+	if len(commandLineArgs) > 3 {
 		fmt.Println("too many arguments provided")
-		os.Exit(1)
+		return
 	}
 
 	rawBaseURL := commandLineArgs[0]
-	fmt.Printf("starting crawl of: %s\n", rawBaseURL)
+	maxConcurrencyString := commandLineArgs[1]
+	maxPagesString := commandLineArgs[2]
 
-	cfg := config{
-		pages:              map[string]int{},
-		rawBaseURL:         rawBaseURL,
-		mu:                 &sync.Mutex{},
-		concurrencyControl: make(chan struct{}, 5),
-		wg:                 &sync.WaitGroup{},
+	maxConcurrency, err := strconv.Atoi(maxConcurrencyString)
+	if err != nil {
+		fmt.Println("as max number of goroutines, please provide a valid integer")
 	}
 
-	cfg.crawlPage(rawBaseURL)
+	maxPages, err := strconv.Atoi(maxPagesString)
+	if err != nil {
+		fmt.Println("as max number of pages to crawl, please provide a valid integer")
+	}
+	cfg, err := configure(rawBaseURL, maxConcurrency, maxPages)
+	if err != nil {
+		fmt.Printf("error configuring crawler: %s\n", err)
+	}
+
+	fmt.Printf("starting crawl of: %s\n", rawBaseURL)
+	cfg.wg.Add(1)
+	go cfg.crawlPage(rawBaseURL)
 	cfg.wg.Wait()
 
 	fmt.Println(cfg.pages)

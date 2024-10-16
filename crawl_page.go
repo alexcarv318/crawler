@@ -12,6 +12,10 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		cfg.wg.Done()
 	}()
 
+	if cfg.areMaxPagesReached() {
+		return
+	}
+
 	if ok := checkIfURLDomainsAreEqual(cfg.rawBaseURL, rawCurrentURL); !ok {
 		fmt.Printf("Error: URL domains mismatch - %s and %s\n", cfg.rawBaseURL, rawCurrentURL)
 		return
@@ -34,13 +38,13 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	fmt.Println(currentPageHTML)
-
 	currentPageContainedURLs, err := getURLsFromHTML(currentPageHTML, rawCurrentURL)
 	if err != nil {
 		fmt.Printf("Error: Failed to get links embedded into HTML: %s\n", err)
 		return
 	}
+
+	fmt.Printf("from %s successfully crawled %d pages\n", normalizedCurrentURL, len(currentPageContainedURLs))
 
 	// recursively go through all links in the website
 	for _, nextURL := range currentPageContainedURLs {
